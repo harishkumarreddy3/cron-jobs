@@ -1,10 +1,7 @@
-// Java Program to Illustrate Creation Of
-// Service implementation class
-
 package com.ideyalabs.test_mail.service;
 
-// Importing required classes
 import java.io.File;
+import java.util.List;
 
 import com.ideyalabs.test_mail.dto.EmailDetails;
 import jakarta.mail.MessagingException;
@@ -17,80 +14,65 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-// Annotation
 @Service
-// Class
-// Implementing EmailService interface
 public class EmailServiceImpl implements EmailService {
 
     @Autowired private JavaMailSender javaMailSender;
 
     @Value("${spring.mail.username}") private String sender;
 
-    // Method 1
-    // To send a simple email
-    public String sendSimpleMail(EmailDetails details)
-    {
-
-        // Try block to check for exceptions
+    // Method to send a simple email
+    public String sendSimpleMail(EmailDetails details) {
         try {
-
-            // Creating a simple mail message
-            SimpleMailMessage mailMessage
-                    = new SimpleMailMessage();
+            SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             // Setting up necessary details
             mailMessage.setFrom(sender);
             mailMessage.setTo(details.getRecipient());
+            mailMessage.setCc(convertListToArray(details.getCc()));
+            mailMessage.setBcc(convertListToArray(details.getBcc()));
             mailMessage.setText(details.getMsgBody());
             mailMessage.setSubject(details.getSubject());
 
             // Sending the mail
             javaMailSender.send(mailMessage);
             return "Mail Sent Successfully...";
-        }
-
-        // Catch block to handle the exceptions
-        catch (Exception e) {
+        } catch (Exception e) {
             return "Error while Sending Mail";
         }
     }
 
-    // Method 2
-    // To send an email with attachment
-    public String
-    sendMailWithAttachment(EmailDetails details)
-    {
+    // Method to send an email with attachment
+    public String sendMailWithAttachment(EmailDetails details) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper mimeMessageHelper;
 
         try {
-            mimeMessageHelper = new MimeMessageHelper(mimeMessage,true);
+            mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
 
             mimeMessageHelper.setFrom(sender);
             mimeMessageHelper.setTo(details.getRecipient());
+            mimeMessageHelper.setCc(convertListToArray(details.getCc()));
+            mimeMessageHelper.setBcc(convertListToArray(details.getBcc()));
             mimeMessageHelper.setText(details.getMsgBody());
-            mimeMessageHelper.setSubject(
-                    details.getSubject());
+            mimeMessageHelper.setSubject(details.getSubject());
 
-            // Adding the attachment
-            FileSystemResource file
-                    = new FileSystemResource(
-                    new File(details.getAttachment()));
-
-            mimeMessageHelper.addAttachment(
-                    file.getFilename(), file);
+            // Adding the attachment if it exists
+            if (details.getAttachment() != null && !details.getAttachment().isEmpty()) {
+                FileSystemResource file = new FileSystemResource(new File(details.getAttachment()));
+                mimeMessageHelper.addAttachment(file.getFilename(), file);
+            }
 
             // Sending the mail
             javaMailSender.send(mimeMessage);
             return "Mail sent Successfully";
-        }
-
-        // Catch block to handle MessagingException
-        catch (MessagingException e) {
-
-            // Display message when exception occurred
+        } catch (MessagingException e) {
             return "Error while sending mail!!!";
         }
+    }
+
+    // Helper method to convert List<String> to String[]
+    private String[] convertListToArray(List<String> list) {
+        return list != null ? list.toArray(new String[0]) : new String[0];
     }
 }
